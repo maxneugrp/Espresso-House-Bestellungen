@@ -27,6 +27,7 @@ const CATEGORIES = [
   "Tee & Heissgetränke",
   "Gebäck & Süßes",
   "Frische Säfte",
+  "Extras",
   "Spezial",
 ];
 

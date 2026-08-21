@@ -29,6 +29,7 @@ const CATEGORY_ORDER = [
   "Tee & Heissgetränke",
   "Gebäck & Süßes",
   "Frische Säfte",
+  "Extras",
   "Spezial",
 ];
 
