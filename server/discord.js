@@ -1,5 +1,3 @@
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-
 function fmtEUR(n) {
   return (
     (Number(n) || 0)
@@ -14,8 +12,7 @@ function buildOrderEmbed(order) {
   const lines = items.map(
     (item) =>
       `${item.quantity}× **${item.name}** — ${fmtEUR(
-        Number(item.price || 0) *
-          Number(item.quantity || 0)
+        Number(item.price || 0) * Number(item.quantity || 0)
       )}`
   );
 
@@ -30,7 +27,7 @@ function buildOrderEmbed(order) {
       },
       {
         name: "Bestellnummer",
-        value: `#${order.order_number}`,
+        value: `#${order.order_number || "—"}`,
         inline: false,
       },
       {
@@ -46,22 +43,21 @@ function buildOrderEmbed(order) {
     ],
 
     footer: {
-      text:
-        "Espresso House · GermanRP · Bestellungen",
+      text: "Espresso House · GermanRP · Bestellungen",
     },
 
     timestamp: new Date().toISOString(),
   };
 }
 
-export async function sendOrderToDiscord(order) {
-  if (!WEBHOOK_URL) {
-    throw new Error(
-      "DISCORD_WEBHOOK_URL fehlt."
-    );
+async function sendOrderToDiscord(order, env) {
+  const webhookUrl = env.DISCORD_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    throw new Error("DISCORD_WEBHOOK_URL fehlt.");
   }
 
-  const response = await fetch(WEBHOOK_URL, {
+  const response = await fetch(webhookUrl, {
     method: "POST",
 
     headers: {
@@ -71,11 +67,9 @@ export async function sendOrderToDiscord(order) {
     body: JSON.stringify({
       username: "Espresso House",
 
-      thread_name: `Bestellung - ${order.forum_number}`,
+      thread_name: `Bestellung - ${order.forum_number || order.order_number}`,
 
-      embeds: [
-        buildOrderEmbed(order),
-      ],
+      embeds: [buildOrderEmbed(order)],
     }),
   });
 
@@ -89,9 +83,80 @@ export async function sendOrderToDiscord(order) {
     );
 
     throw new Error(
-      "Discord konnte die Bestellung nicht erstellen."
+      `Discord konnte die Bestellung nicht erstellen. HTTP ${response.status}`
     );
   }
 
   return true;
 }
+
+export default {
+  async fetch(request, env) {
+    try {
+      const url = new URL(request.url);
+
+      // CORS
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+          },
+        });
+      }
+
+      if (
+        request.method === "POST" &&
+        url.pathname === "/api/orders"
+      ) {
+        const order = await request.json();
+
+        await sendOrderToDiscord(order, env);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Bestellung erfolgreich gesendet.",
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*",
+            },
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Route nicht gefunden",
+        }),
+        {
+          status: 404,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
+    } catch (error) {
+      console.error("API Fehler:", error);
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.message || "Unbekannter Fehler",
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
+      );
+    }
+  },
+};

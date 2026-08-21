@@ -17,6 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 
 const ORDERS_STORAGE_KEY = "espresso-house-orders";
+const API_URL =
+  "https://espresso-house-api.maxneugrp.workers.dev/api/orders";
 
 const fmt = (n) =>
   (Number(n) || 0).toFixed(2).replace(".", ",") + " €";
@@ -48,7 +50,10 @@ function generateId() {
 
 function getNextOrderNumber() {
   try {
-    const stored = localStorage.getItem(ORDERS_STORAGE_KEY);
+    const stored = localStorage.getItem(
+      ORDERS_STORAGE_KEY
+    );
+
     const orders = stored ? JSON.parse(stored) : [];
 
     if (!Array.isArray(orders) || orders.length === 0) {
@@ -255,14 +260,7 @@ export default function NewOrder() {
         item_count: count,
       };
 
-      /*
-       * Bestellung an das Backend senden.
-       *
-       * Das Backend kümmert sich um Discord.
-       * Die Webhook-URL bleibt dadurch aus
-       * dem Frontend heraus.
-       */
-      const response = await fetch("/api/orders", {
+      const response = await fetch(API_URL, {
         method: "POST",
 
         headers: {
@@ -283,10 +281,6 @@ export default function NewOrder() {
         );
       }
 
-      /*
-       * Discord war erfolgreich.
-       * Jetzt lokal speichern.
-       */
       saveOrder({
         ...payload,
         order_number:
