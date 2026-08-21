@@ -1,0 +1,1 @@
+export const fmt = (n) => (Number(n) || 0).toFixed(2).replace(".", ",") + " €";
