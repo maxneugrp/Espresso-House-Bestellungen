@@ -48,37 +48,10 @@ function generateId() {
     .slice(2)}`;
 }
 
-function getNextOrderNumber() {
-  try {
-    const stored = localStorage.getItem(
-      ORDERS_STORAGE_KEY
-    );
-
-    const orders = stored ? JSON.parse(stored) : [];
-
-    if (!Array.isArray(orders) || orders.length === 0) {
-      return 1;
-    }
-
-    const highestNumber = orders.reduce(
-      (highest, currentOrder) => {
-        const number =
-          Number(currentOrder?.order_number) || 0;
-
-        return Math.max(highest, number);
-      },
-      0
-    );
-
-    return highestNumber + 1;
-  } catch (error) {
-    console.error(
-      "Fehler beim Ermitteln der Bestellnummer:",
-      error
-    );
-
-    return 1;
-  }
+function generateOrderNumber() {
+  return Math.floor(
+    Math.random() * 9001
+  ) + 1000;
 }
 
 function saveOrder(order) {
@@ -241,7 +214,7 @@ export default function NewOrder() {
     setSubmitting(true);
 
     try {
-      const orderNumber = getNextOrderNumber();
+      const orderNumber = generateOrderNumber();
 
       const payload = {
         id: generateId(),
